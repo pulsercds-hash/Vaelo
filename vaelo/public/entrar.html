@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar · Vaelo</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header id="barra" class="barra"><div class="contenedor"><a href="/" class="marca">vaelo</a></div></header>
+  <main class="acceso">
+    <form class="tarjeta-acceso" id="form" novalidate>
+      <h1>Entra a tu cuenta</h1>
+      <div id="msg" class="mensaje" role="alert"></div>
+      <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="email" required></div>
+      <div class="campo"><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required></div>
+      <button class="boton" type="submit">Entrar</button>
+      <p class="alterno">¿No tienes cuenta? <a href="/registro">Crea una gratis</a></p>
+    </form>
+  </main>
+  <script src="/js/comun.js"></script>
+  <script>
+    pintarBarra();
+    const form = document.getElementById('form');
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const boton = form.querySelector('button');
+      boton.disabled = true;
+      try {
+        const r = await api('/api/login', { body: { email: form.email.value, password: form.password.value } });
+        location.href = r.rol === 'admin' ? '/admin' : '/mi-cuenta';
+      } catch (e) {
+        mostrarMensaje(document.getElementById('msg'), e.message);
+        boton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crear cuenta · Vaelo</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header id="barra" class="barra"><div class="contenedor"><a href="/" class="marca">vaelo</a></div></header>
+  <main class="acceso">
+    <form class="tarjeta-acceso" id="form" novalidate>
+      <h1>Crea tu cuenta</h1>
+      <p style="color:var(--suave)">Con tu cuenta pides envíos y ves en qué va cada uno.</p>
+      <div id="msg" class="mensaje" role="alert"></div>
+      <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" autocomplete="name" required maxlength="100"></div>
+      <div class="campo"><label for="telefono">Teléfono o WhatsApp</label><input id="telefono" type="tel" autocomplete="tel" placeholder="7000-0000" required maxlength="30"></div>
+      <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="email" required maxlength="150"></div>
+      <div class="campo"><label for="password">Contraseña <span class="ayuda">Mínimo 8 caracteres</span></label><input id="password" type="password" autocomplete="new-password" required minlength="8"></div>
+      <button class="boton" type="submit">Crear cuenta</button>
+      <p class="alterno">¿Ya tienes cuenta? <a href="/entrar">Entra aquí</a></p>
+    </form>
+  </main>
+  <script src="/js/comun.js"></script>
+  <script>
+    pintarBarra();
+    const form = document.getElementById('form');
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const boton = form.querySelector('button');
+      boton.disabled = true;
+      try {
+        await api('/api/registro', { body: {
+          nombre: form.nombre.value, telefono: form.telefono.value,
+          email: form.email.value, password: form.password.value,
+        } });
+        location.href = '/mi-cuenta';
+      } catch (e) {
+        mostrarMensaje(document.getElementById('msg'), e.message);
+        boton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
