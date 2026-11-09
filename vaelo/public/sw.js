@@ -1,5 +1,5 @@
 // Permite instalar Vaelo como app en el celular. Guarda solo archivos de diseño; los datos siempre se piden en vivo.
-const CACHE = 'vaelo-v2';
+const CACHE = 'vaelo-v3';
 const ARCHIVOS = ['/css/styles.css', '/js/comun.js', '/img/logo-blanco.png', '/img/logo-negro.png', '/img/icono-192.png'];
 
 self.addEventListener('install', (ev) => {
@@ -18,4 +18,15 @@ self.addEventListener('fetch', (ev) => {
       return r;
     }).catch(() => caches.match(ev.request).then((r) => r || new Response('Sin conexión. Revisa tu internet.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })))
   );
+});
+
+// Al tocar la notificación de un pedido nuevo, abre (o trae al frente) el panel
+self.addEventListener('notificationclick', (ev) => {
+  ev.notification.close();
+  const destino = (ev.notification.data && ev.notification.data.url) || '/admin';
+  ev.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((ventanas) => {
+    const abierta = ventanas.find((v) => new URL(v.url).pathname === destino);
+    if (abierta) return abierta.focus();
+    return self.clients.openWindow(destino);
+  }));
 });
