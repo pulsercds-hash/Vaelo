@@ -13,7 +13,7 @@ Página web y app (instalable en el celular) de Vaelo, mensajería en moto y pic
 | `/enviar`, `/mi-cuenta` | Clientes | Enviar paquetes (vehículo, peso, mapa), seguirlos en el mapa, imprimir la guía |
 | `/mensajero` | Mensajeros | Ver entregas asignadas, navegar con Google Maps o Waze, marcar recogido/entregado, compartir ubicación |
 | `/rastreo` | Todos | Seguir un envío con el número de guía |
-| `/admin` | Administrador | Asignar mensajeros, cambiar estados, mapa de la flota, clientes, vehículos, zonas y precios |
+| `/admin` | Administrador | Aviso de pedidos nuevos (sonido, notificación y contador), asignar mensajeros, cambiar estados, mapa de la flota, clientes, vehículos, zonas y precios |
 
 ## Tecnología
 

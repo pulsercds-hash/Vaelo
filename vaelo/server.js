@@ -419,6 +419,18 @@ ruta('GET', '/api/admin/resumen', ({ req }) => {
   return { porEstado, hoy, sinAsignar, entregadosMes: mes.n, ingresosMes: redondear(mes.total), clientes };
 });
 
+// Aviso de pedidos nuevos: el panel pregunta cada pocos segundos si hay envíos con número mayor al último que vio
+ruta('GET', '/api/admin/nuevos', ({ req, query }) => {
+  requiereRol(req, 'admin');
+  const ultimo = db.prepare('SELECT COALESCE(MAX(id), 0) AS n FROM envios').get().n;
+  const desde = Number(query.get('desde'));
+  if (!Number.isInteger(desde) || desde < 0 || query.get('desde') === null) return { ultimo, nuevos: [] };
+  const nuevos = db.prepare(`SELECT e.id, e.guia, e.creado, e.precio, e.origen_zona, e.destino_zona, v.nombre AS vehiculo, u.nombre AS cliente_nombre
+    FROM envios e JOIN vehiculos v ON v.id = e.vehiculo_id JOIN usuarios u ON u.id = e.usuario_id
+    WHERE e.id > ? AND e.estado != 'cancelado' ORDER BY e.id DESC LIMIT 50`).all(desde);
+  return { ultimo, nuevos };
+});
+
 ruta('GET', '/api/admin/envios', ({ req, query }) => {
   requiereRol(req, 'admin');
   const cond = [], args = [];

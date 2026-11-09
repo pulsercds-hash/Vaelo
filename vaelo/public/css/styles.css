@@ -313,3 +313,21 @@ dialog::backdrop { background: rgba(14,36,99,.55); }
 .etiqueta .franja img { height: 26px; width: auto; }
 .guia-imprimible .franja img { height: 24px; width: auto; }
 .pie-sitio img { display: block; }
+
+/* Aviso de pedidos nuevos (panel) */
+.aviso-nuevos { display: flex; align-items: center; justify-content: space-between; gap: .75rem 1rem; flex-wrap: wrap;
+  background: var(--cinta); color: var(--tinta); border-radius: var(--radio); padding: .8rem 1rem; margin-bottom: 1.25rem;
+  box-shadow: 0 6px 18px rgba(14, 36, 99, .18); animation: aviso-entra .35s ease-out; }
+.aviso-nuevos[hidden] { display: none; }
+.aviso-nuevos .aviso-texto { font-size: 1rem; }
+.aviso-nuevos .aviso-texto strong { font-size: 1.1rem; font-weight: 800; }
+.aviso-nuevos .aviso-acciones { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.aviso-nuevos .boton.cinta { background: var(--tinta); color: #fff; }
+.aviso-nuevos .boton.borde { color: var(--tinta); border-color: var(--tinta); }
+.aviso-nuevos .boton.borde:hover { background: rgba(0,0,0,.06); }
+.aviso-cerrar { font: inherit; font-size: 1.5rem; line-height: 1; width: 2.2rem; height: 2.2rem; border: 0; border-radius: 50%; background: transparent; cursor: pointer; color: var(--tinta); }
+.aviso-cerrar:hover { background: rgba(0,0,0,.08); }
+tr.nuevo td { background: #fff7d1; }
+.marca-nuevo { display: inline-block; margin-left: .4rem; padding: .05rem .45rem; border-radius: 999px; background: var(--cinta); color: var(--tinta); font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; vertical-align: middle; }
+@keyframes aviso-entra { from { transform: translateY(-8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .aviso-nuevos { animation: none; } }
