@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rastrear envío · Vaelo</title>
+  <meta name="theme-color" content="#0e2463">
+  <link rel="icon" href="/img/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header id="barra" class="barra"><div class="contenedor"><a href="/" class="marca"><img src="/img/logo-blanco.png" alt="Vaelo" width="139" height="40"></a></div></header>
+  <main class="rastreo">
+    <div class="contenedor">
+      <h1 style="font-size:clamp(1.9rem,4vw,2.8rem)">Rastrea tu envío</h1>
+      <form id="form">
+        <label class="oculto" for="guia">Número de guía</label>
+        <input id="guia" name="guia" placeholder="VA-7K3M9QX2" autocomplete="off" required maxlength="20">
+        <button class="boton" type="submit">Rastrear</button>
+      </form>
+      <div id="msg" class="mensaje" role="alert"></div>
+      <div id="resultado" class="resultado" aria-live="polite"></div>
+      <p class="pista" style="max-width:640px;margin-top:1.5rem">¿Enviaste este paquete? <a href="/mi-cuenta">Entra a tu cuenta</a> para verlo en el mapa.</p>
+    </div>
+  </main>
+  <script src="/js/comun.js"></script>
+  <script>
+    pintarBarra();
+    const PASOS = ['pendiente', 'recogido', 'en_camino', 'entregado'];
+    const ETIQUETAS = ['Solicitado', 'Recogido', 'En camino', 'Entregado'];
+    const form = document.getElementById('form');
+    const msg = document.getElementById('msg');
+    const out = document.getElementById('resultado');
+
+    async function buscar(guia) {
+      guia = guia.trim().toUpperCase().replace(/\s+/g, '');
+      if (!guia) return;
+      if (!guia.startsWith('VA-') && /^[A-Z0-9]{8}$/.test(guia)) guia = 'VA-' + guia;
+      form.guia.value = guia;
+      history.replaceState(null, '', '/rastreo?guia=' + encodeURIComponent(guia));
+      mostrarMensaje(msg, '');
+      out.replaceChildren();
+      try {
+        const r = await api('/api/rastreo/' + encodeURIComponent(guia));
+        const idx = PASOS.indexOf(r.estado);
+        const nodos = [
+          el('div', { class: 'encabezado' },
+            el('div', {}, el('div', { class: 'guia', text: r.guia }),
+              el('div', { style: 'color:var(--suave)', text: `${r.vehiculo}: ${r.origen_zona || ''} a ${r.destino_zona || ''}${r.destinatario ? ', para ' + r.destinatario : ''}` })),
+            chipEstado(r.estado)),
+        ];
+        if (r.estado !== 'cancelado') {
+          nodos.push(el('div', { class: 'progreso', 'aria-hidden': 'true' }, PASOS.map((_, i) => el('i', { class: i <= idx ? 'lleno' : '' }))));
+          nodos.push(el('div', { class: 'progreso-textos' }, ETIQUETAS.map((t, i) => el('span', { class: i === idx ? 'actual' : '', text: t }))));
+        }
+        nodos.push(el('h2', { style: 'font-size:1.15rem', text: 'Historial' }));
+        nodos.push(el('ol', { class: 'linea-tiempo' }, r.eventos.slice().reverse().map(ev =>
+          el('li', {}, el('strong', { text: ESTADOS[ev.estado] || ev.estado }), ev.nota ? el('div', { text: ev.nota }) : null, el('small', { text: fecha(ev.creado) })))));
+        out.replaceChildren(...nodos);
+      } catch (e) { mostrarMensaje(msg, e.message); }
+    }
+    form.addEventListener('submit', (ev) => { ev.preventDefault(); buscar(form.guia.value); });
+    const inicial = new URLSearchParams(location.search).get('guia');
+    if (inicial) buscar(inicial);
+  </script>
+</body>
+</html>

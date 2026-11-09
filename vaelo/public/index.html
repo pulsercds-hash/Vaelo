@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vaelo Mensajería · Envíos en moto y pickup en Guatemala</title>
+  <meta name="description" content="Vaelo recoge y entrega tus paquetes en la Ciudad de Guatemala y municipios. Q35 en zonas 1, 6, 16, 17, 18 y 24. Pide tu envío en línea y síguelo en el mapa.">
+  <meta name="theme-color" content="#0e2463">
+  <link rel="icon" href="/img/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header id="barra" class="barra"><div class="contenedor"><a href="/" class="marca"><img src="/img/logo-blanco.png" alt="Vaelo" width="139" height="40"></a></div></header>
+
+  <main>
+    <section class="portada">
+      <div class="contenedor">
+        <div>
+          <h1>Mensajería en moto y pickup en la Ciudad de Guatemala</h1>
+          <p class="bajada">Pide tu envío desde el celular, un mensajero de Vaelo pasa por el paquete y lo sigues en el mapa hasta que se entrega.</p>
+          <div class="acciones">
+            <a class="boton cinta" href="/enviar">Enviar un paquete</a>
+            <a class="boton borde" href="#precios">Ver precios</a>
+          </div>
+        </div>
+
+        <form class="etiqueta" id="form-rastreo" action="/rastreo" method="get">
+          <div class="franja"><img src="/img/logo-negro.png" alt="Vaelo" height="26" style="height:26px;width:auto"><span>Guía de envío</span></div>
+          <div class="cuerpo">
+            <label for="guia">¿Ya tienes un número de guía? Rastréalo aquí</label>
+            <div class="entrada-guia">
+              <input id="guia" name="guia" placeholder="VA-7K3M9QX2" autocomplete="off" required maxlength="20">
+              <button class="boton" type="submit">Rastrear</button>
+            </div>
+            <div class="codigo-barras" aria-hidden="true"></div>
+          </div>
+          <div class="pie">
+            <div>En zonas cubiertas<strong id="precio-desde">Q35.00</strong></div>
+            <div>Vehículos<strong>Moto y pickup</strong></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="seccion" id="precios">
+      <div class="contenedor cotizador">
+        <div>
+          <h2>¿Cuánto cuesta tu envío?</h2>
+          <p class="intro">Precio fijo cuando recogemos y entregamos dentro de <strong id="lista-zonas">las zonas 1, 6, 16, 17, 18 y 24</strong>. Hacia municipios y otras zonas cobramos por kilómetro recorrido.</p>
+        </div>
+        <div class="panel">
+          <div class="campo">
+            <span class="etiqueta-campo" id="lbl-veh">Vehículo</span>
+            <div class="opciones" id="cot-vehiculos" role="radiogroup" aria-labelledby="lbl-veh"></div>
+          </div>
+          <div class="fila">
+            <div class="campo"><label for="cot-origen">Recogemos en</label><select id="cot-origen"></select></div>
+            <div class="campo"><label for="cot-destino">Entregamos en</label><select id="cot-destino"></select></div>
+          </div>
+          <div class="precio-grande" aria-live="polite"><strong id="cot-precio">Q35.00</strong><span id="cot-nota">por envío</span></div>
+          <a class="boton" href="/enviar" style="width:100%">Enviar un paquete</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="seccion gris">
+      <div class="contenedor">
+        <h2>Así funciona</h2>
+        <ol class="pasos">
+          <li><h3>Pides el envío</h3><p>Eliges moto o pickup, pones el peso del paquete y marcas en el mapa dónde lo recogemos y dónde lo dejamos. Ves el precio antes de confirmar.</p></li>
+          <li><h3>Pasamos a recoger</h3><p>Asignamos un mensajero de Vaelo que llega a la dirección de recogida y se lleva el paquete.</p></li>
+          <li><h3>Lo sigues en el mapa</h3><p>Ves dónde va tu paquete y el momento en que se entrega, con tu número de guía.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="llamado">
+      <div class="contenedor">
+        <h2>Lleva Vaelo en tu celular</h2>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+          <button class="boton" type="button" id="instalar" hidden>Instalar la app</button>
+          <a class="boton" href="/registro" id="crear">Crear mi cuenta</a>
+        </div>
+        <p id="ayuda-ios" hidden style="flex-basis:100%;margin:0">En iPhone: abre esta página en Safari, toca Compartir y elige “Agregar a pantalla de inicio”.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie-sitio">
+    <div class="contenedor">
+      <div><img src="/img/logo-blanco.png" alt="Vaelo" height="30" style="height:30px;width:auto;margin-bottom:.5rem">Mensajería y paquetería en Guatemala</div>
+      <div id="contacto"><span id="horario-largo"></span></div>
+    </div>
+  </footer>
+
+  <script src="/js/comun.js"></script>
+  <script>
+    pintarBarra();
+
+    // Botón para instalar la app (Android / Chrome)
+    let avisoInstalar = null;
+    window.addEventListener('beforeinstallprompt', (ev) => { ev.preventDefault(); avisoInstalar = ev; document.getElementById('instalar').hidden = false; });
+    document.getElementById('instalar').addEventListener('click', async () => { if (avisoInstalar) { avisoInstalar.prompt(); avisoInstalar = null; } });
+    if (/iphone|ipad/i.test(navigator.userAgent) && !navigator.standalone) document.getElementById('ayuda-ios').hidden = false;
+
+    (async () => {
+      let cfg;
+      try { cfg = await api('/api/config'); } catch { return; }
+      const vehs = document.getElementById('cot-vehiculos');
+      vehs.replaceChildren(...cfg.vehiculos.map((v, i) => el('label', { class: 'opcion' },
+        el('input', { type: 'radio', name: 'cot-veh', value: v.id, checked: i === 0 }),
+        el('span', {}, v.nombre, el('small', { text: `Hasta ${v.peso_max} lb` })))));
+      const opciones = () => [...cfg.zonas.map(z => el('option', { value: z, text: z })), el('option', { value: cfg.otraZona, text: cfg.otraZona })];
+      const so = document.getElementById('cot-origen'), sd = document.getElementById('cot-destino');
+      so.replaceChildren(...opciones()); sd.replaceChildren(...opciones());
+      if (cfg.zonas[1]) sd.value = cfg.zonas[cfg.zonas.length - 1];
+      if (cfg.zonas.length) {
+        const z = cfg.zonas.map(x => x.replace(/^zona\s*/i, ''));
+        document.getElementById('lista-zonas').textContent = 'las zonas ' + (z.length > 1 ? z.slice(0, -1).join(', ') + ' y ' + z[z.length - 1] : z[0]);
+      }
+      if (cfg.vehiculos.length) document.getElementById('precio-desde').textContent = dinero(Math.min(...cfg.vehiculos.map(v => v.tarifa_zona)));
+      const calcular = () => {
+        const v = cfg.vehiculos.find(x => String(x.id) === document.querySelector('input[name="cot-veh"]:checked')?.value);
+        if (!v) return;
+        const precio = document.getElementById('cot-precio'), nota = document.getElementById('cot-nota');
+        if (so.value !== cfg.otraZona && sd.value !== cfg.otraZona) { precio.textContent = dinero(v.tarifa_zona); nota.textContent = 'precio fijo'; }
+        else { precio.textContent = dinero(v.precio_km) + '/km'; nota.textContent = `más ${dinero(v.tarifa_base)} de arranque. Calculamos el total al marcar los puntos en el mapa.`; }
+      };
+      [so, sd].forEach(s => s.addEventListener('change', calcular));
+      vehs.addEventListener('change', calcular);
+      calcular();
+
+      if (cfg.horario) document.getElementById('horario-largo').textContent = cfg.horario;
+      if (cfg.whatsapp) document.getElementById('contacto').append(el('br'), el('a', { href: `https://wa.me/${cfg.whatsapp}`, text: 'Escríbenos por WhatsApp', rel: 'noopener', target: '_blank' }));
+    })();
+  </script>
+</body>
+</html>

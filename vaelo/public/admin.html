@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel · Vaelo</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0e2463">
+  <link rel="icon" href="/img/favicon.png" type="image/png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header id="barra" class="barra"><div class="contenedor"><a href="/" class="marca"><img src="/img/logo-blanco.png" alt="Vaelo" width="139" height="40"></a></div></header>
+  <main class="area">
+    <div class="contenedor">
+      <div class="area-cabecera">
+        <div><h1>Panel de Vaelo</h1><p>Pedidos, mensajeros, clientes y tarifas.</p></div>
+        <button class="boton borde chico" type="button" id="refrescar">Actualizar</button>
+      </div>
+
+      <div class="cifras" id="cifras"></div>
+
+      <div class="pestanas" role="tablist">
+        <button role="tab" id="tab-envios" aria-selected="true" aria-controls="panel-envios">Envíos</button>
+        <button role="tab" id="tab-mensajeros" aria-selected="false" aria-controls="panel-mensajeros">Mensajeros</button>
+        <button role="tab" id="tab-clientes" aria-selected="false" aria-controls="panel-clientes">Clientes</button>
+        <button role="tab" id="tab-tarifas" aria-selected="false" aria-controls="panel-tarifas">Tarifas y ajustes</button>
+      </div>
+
+      <section id="panel-envios" role="tabpanel" aria-labelledby="tab-envios">
+        <div class="filtros">
+          <label class="oculto" for="buscar">Buscar</label>
+          <input id="buscar" type="search" placeholder="Buscar por guía, nombre o teléfono">
+          <div id="chips" style="display:flex;gap:.4rem;flex-wrap:wrap"></div>
+        </div>
+        <div class="tabla-envoltura">
+          <table>
+            <thead><tr><th>Guía</th><th>Fecha</th><th>Cliente</th><th>Entrega</th><th>Vehículo</th><th>Precio</th><th>Mensajero</th><th>Estado</th></tr></thead>
+            <tbody id="tabla-envios"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="panel-mensajeros" role="tabpanel" aria-labelledby="tab-mensajeros" hidden>
+        <div id="msg-mensajeros" class="mensaje" role="alert"></div>
+        <div class="bloque">
+          <h2>Dónde están ahora</h2>
+          <p style="color:var(--suave)">Se muestra la última ubicación de cada mensajero de las últimas 2 horas.</p>
+          <div class="mapa alto" id="mapa-flota"></div>
+        </div>
+        <div class="bloque">
+          <h2>Equipo</h2>
+          <div class="tabla-envoltura">
+            <table>
+              <thead><tr><th>Nombre</th><th>Contacto</th><th>Vehículo</th><th>Envíos activos</th><th>Última ubicación</th><th>Activo</th><th></th></tr></thead>
+              <tbody id="tabla-mensajeros"></tbody>
+            </table>
+          </div>
+        </div>
+        <form class="bloque" id="form-mensajero" novalidate>
+          <h2>Agregar mensajero</h2>
+          <p style="color:var(--suave)">El mensajero entra con este correo y contraseña en vaelomensajeria.com/entrar y ve solo los envíos que le asignes.</p>
+          <div class="fila">
+            <div class="campo"><label for="m-nombre">Nombre</label><input id="m-nombre" maxlength="100"></div>
+            <div class="campo"><label for="m-telefono">Teléfono</label><input id="m-telefono" type="tel" maxlength="30"></div>
+            <div class="campo"><label for="m-vehiculo">Vehículo</label><select id="m-vehiculo"></select></div>
+          </div>
+          <div class="fila">
+            <div class="campo"><label for="m-email">Correo</label><input id="m-email" type="email" maxlength="150"></div>
+            <div class="campo"><label for="m-pass">Contraseña <span class="ayuda">Mínimo 8 caracteres</span></label><input id="m-pass" type="text" autocomplete="off"></div>
+          </div>
+          <button class="boton" type="submit">Agregar mensajero</button>
+        </form>
+      </section>
+
+      <section id="panel-clientes" role="tabpanel" aria-labelledby="tab-clientes" hidden>
+        <div class="tabla-envoltura">
+          <table>
+            <thead><tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Envíos</th><th>Registro</th></tr></thead>
+            <tbody id="tabla-clientes"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="panel-tarifas" role="tabpanel" aria-labelledby="tab-tarifas" hidden>
+        <div id="msg-tarifas" class="mensaje" role="alert"></div>
+        <div class="bloque">
+          <h2>Vehículos y precios</h2>
+          <p style="color:var(--suave)">Dentro de las zonas cubiertas se cobra la tarifa fija. Fuera de ellas: arranque + kilómetros × precio por km (nunca menos que la tarifa fija).</p>
+          <div class="tabla-envoltura">
+            <table>
+              <thead><tr><th>Vehículo</th><th>Descripción</th><th>Peso máx. (lb)</th><th>Tarifa zonas (Q)</th><th>Arranque (Q)</th><th>Por km (Q)</th><th>Activo</th><th></th></tr></thead>
+              <tbody id="tabla-vehiculos"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="bloque">
+          <h2>Zonas con tarifa fija</h2>
+          <div class="tabla-envoltura" style="margin-bottom:1rem">
+            <table>
+              <thead><tr><th>Zona</th><th style="width:110px">Activa</th><th style="width:110px"></th></tr></thead>
+              <tbody id="tabla-zonas"></tbody>
+            </table>
+          </div>
+          <form id="form-zona" class="fila" style="align-items:end" novalidate>
+            <div class="campo"><label for="zona-nombre">Nueva zona</label><input id="zona-nombre" maxlength="60" placeholder="Ej. Zona 10"></div>
+            <div class="campo"><button class="boton" type="submit">Agregar zona</button></div>
+          </form>
+        </div>
+        <form class="bloque" id="form-ajustes" novalidate>
+          <h2>Contacto</h2>
+          <div class="fila">
+            <div class="campo"><label for="whatsapp">WhatsApp de la empresa <span class="ayuda">Con código de país, ej. 50255555555</span></label><input id="whatsapp" type="tel" maxlength="15"></div>
+            <div class="campo"><label for="horario">Horario de atención</label><input id="horario" maxlength="120"></div>
+          </div>
+          <button class="boton" type="submit">Guardar</button>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="dlg"><div class="dialogo" id="dlg-cuerpo"></div></dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/js/comun.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let filtroEstado = '', temporizador = null, mensajeros = [], vehiculos = [], mapaFlota = null, capaFlota = null;
+    const sub = (t) => el('small', { style: 'color:var(--suave)', text: t || '' });
+
+    const tabs = ['envios', 'mensajeros', 'clientes', 'tarifas'];
+    function abrirTab(nombre) {
+      tabs.forEach(t => { $('tab-' + t).setAttribute('aria-selected', String(t === nombre)); $('panel-' + t).hidden = t !== nombre; });
+      if (nombre === 'mensajeros') cargarMensajeros();
+      if (nombre === 'clientes') cargarClientes();
+      if (nombre === 'tarifas') cargarTarifas();
+    }
+    tabs.forEach(t => $('tab-' + t).addEventListener('click', () => abrirTab(t)));
+
+    async function cargarResumen() {
+      const r = await api('/api/admin/resumen');
+      const c = (titulo, valor, destacada) => el('div', { class: 'cifra' + (destacada ? ' destacada' : '') }, el('span', { text: titulo }), el('strong', { text: valor }));
+      $('cifras').replaceChildren(
+        c('Sin mensajero', r.sinAsignar, r.sinAsignar > 0),
+        c('Por recoger', r.porEstado.pendiente),
+        c('Recogidos', r.porEstado.recogido),
+        c('En camino', r.porEstado.en_camino),
+        c('Pedidos hoy', r.hoy),
+        c('Entregados este mes', r.entregadosMes),
+        c('Ingresos del mes', dinero(r.ingresosMes)));
+    }
+
+    function pintarChips() {
+      const opciones = [['', 'Todos'], ['sin_asignar', 'Sin mensajero'], ...Object.entries(ESTADOS)];
+      $('chips').replaceChildren(...opciones.map(([v, t]) => el('button', {
+        class: 'chip', type: 'button', 'aria-pressed': String(v === filtroEstado), text: v === 'pendiente' ? 'Por recoger' : t,
+        onclick: () => { filtroEstado = v; pintarChips(); cargarEnvios(); },
+      })));
+    }
+
+    async function cargarEnvios() {
+      const q = new URLSearchParams();
+      if (filtroEstado) q.set('estado', filtroEstado);
+      if ($('buscar').value.trim()) q.set('q', $('buscar').value.trim());
+      const cuerpo = $('tabla-envios');
+      try {
+        const { envios } = await api('/api/admin/envios?' + q);
+        if (!envios.length) { cuerpo.replaceChildren(el('tr', {}, el('td', { colspan: 8, style: 'text-align:center;color:var(--suave);padding:2rem', text: 'No hay envíos con este filtro.' }))); return; }
+        cuerpo.replaceChildren(...envios.map(e => el('tr', { class: 'clic', tabindex: 0,
+          onclick: () => abrirEnvio(e.id), onkeydown: (ev) => { if (ev.key === 'Enter') abrirEnvio(e.id); } },
+          el('td', {}, el('strong', { text: e.guia })),
+          el('td', { text: fecha(e.creado) }),
+          el('td', {}, e.cliente_nombre, el('br'), sub(e.cliente_telefono)),
+          el('td', {}, e.destino_nombre, el('br'), sub(e.destino_zona)),
+          el('td', {}, e.vehiculo, el('br'), sub(e.peso + ' lb')),
+          el('td', {}, dinero(e.precio), el('br'), sub(e.tipo_tarifa === 'km' ? `${e.km} km` : 'Tarifa fija')),
+          el('td', {}, e.mensajero_nombre ? e.mensajero_nombre.split(' ')[0] : el('span', { class: 'estado pendiente', text: 'Sin asignar' })),
+          el('td', {}, chipEstado(e.estado)))));
+      } catch (e) { cuerpo.replaceChildren(el('tr', {}, el('td', { colspan: 8, class: 'mensaje error', text: e.message }))); }
+    }
+
+    async function asegurarMensajeros() {
+      if (!mensajeros.length) mensajeros = (await api('/api/admin/mensajeros')).mensajeros;
+    }
+
+    async function abrirEnvio(id) {
+      await asegurarMensajeros();
+      const { envio: e, eventos } = await api('/api/admin/envios/' + id);
+      const msg = el('div', { class: 'mensaje', role: 'alert' });
+      const selM = el('select', { id: 'sel-mensajero' }, el('option', { value: '', text: 'Sin asignar' }),
+        mensajeros.filter(m => m.activo).map(m => el('option', { value: m.id, text: `${m.nombre} (${m.vehiculo || 'sin vehículo'}, ${m.activos} activos)`, selected: m.id === e.mensajero_id })));
+      const selEstado = el('select', { id: 'nuevo-estado' }, Object.entries(ESTADOS).map(([v, t]) => el('option', { value: v, text: t, selected: v === e.estado })));
+      const nota = el('input', { id: 'nota-estado', maxlength: 300, placeholder: 'Ej. Recibió la señora de la casa' });
+      const dato = (t, ...v) => el('div', {}, el('span', { text: t }), ...v);
+      const cajaMapa = el('div', { class: 'mapa' });
+      const guardar = async (boton, fn) => {
+        boton.disabled = true;
+        try { await fn(); $('dlg').close(); cargarEnvios(); cargarResumen(); mensajeros = []; }
+        catch (err) { mostrarMensaje(msg, err.message); boton.disabled = false; }
+      };
+      $('dlg-cuerpo').replaceChildren(
+        el('button', { class: 'cerrar no-imprimir', type: 'button', 'aria-label': 'Cerrar', text: '×', onclick: () => $('dlg').close() }),
+        el('div', { class: 'no-imprimir' },
+          el('h2', { style: 'font-size:1.4rem;margin-bottom:.3rem', text: e.guia }), chipEstado(e.estado),
+          el('div', { style: 'margin-top:1rem' }, cajaMapa),
+          el('div', { class: 'datos' },
+            dato('Cliente', `${e.cliente_nombre} `, telLink(e.cliente_telefono)),
+            dato('Precio', `${dinero(e.precio)}, ${PAGOS[e.metodo_pago] || e.metodo_pago}${e.km ? `. ${e.km} km` : ''}`),
+            dato('Recoger en', `${e.origen_direccion} (${e.origen_zona}). Tel. `, telLink(e.origen_telefono)),
+            dato('Entregar a', `${e.destino_nombre}. ${e.destino_direccion} (${e.destino_zona}). Tel. `, telLink(e.destino_telefono)),
+            dato('Vehículo y paquete', `${e.vehiculo}, ${e.peso} lb${e.descripcion ? '. ' + e.descripcion : ''}`),
+            dato('Cobrar al recibir', Number(e.cobro_destinatario) > 0 ? dinero(e.cobro_destinatario) : 'No'),
+            e.notas ? dato('Indicaciones', e.notas) : null),
+          msg,
+          el('div', { class: 'bloque', style: 'background:var(--gris);border:0' },
+            el('h3', { text: 'Mensajero' }),
+            el('div', { class: 'fila', style: 'align-items:end' },
+              el('div', { class: 'campo' }, el('label', { for: 'sel-mensajero', text: 'Asignar a' }), selM),
+              el('div', { class: 'campo' }, el('button', { class: 'boton', type: 'button', text: 'Guardar mensajero', onclick: (ev) =>
+                guardar(ev.target, () => api(`/api/admin/envios/${e.id}/asignar`, { body: { mensajero_id: selM.value } })) })))),
+          el('div', { class: 'bloque', style: 'background:var(--gris);border:0' },
+            el('h3', { text: 'Cambiar estado' }),
+            el('div', { class: 'fila' },
+              el('div', { class: 'campo' }, el('label', { for: 'nuevo-estado', text: 'Nuevo estado' }), selEstado),
+              el('div', { class: 'campo' }, el('label', { for: 'nota-estado' }, 'Nota ', el('span', { class: 'ayuda', text: 'El cliente la ve en el rastreo' })), nota)),
+            el('button', { class: 'boton', type: 'button', text: 'Guardar estado', onclick: (ev) =>
+              guardar(ev.target, () => api(`/api/admin/envios/${e.id}/estado`, { body: { estado: selEstado.value, nota: nota.value } })) })),
+          el('h3', { style: 'margin-top:1.25rem', text: 'Historial' }),
+          el('ol', { class: 'linea-tiempo' }, eventos.slice().reverse().map(ev =>
+            el('li', {}, el('strong', { text: ESTADOS[ev.estado] || ev.estado }), ev.nota ? el('div', { text: ev.nota }) : null, el('small', { text: fecha(ev.creado) })))),
+          el('button', { class: 'boton borde chico', type: 'button', text: 'Imprimir guía', onclick: () => {
+            $('zona-guia').replaceChildren(guiaImprimible(e)); window.print(); $('zona-guia').replaceChildren();
+          } })),
+        el('div', { id: 'zona-guia', style: 'margin-top:.75rem' }));
+      $('dlg').showModal();
+      const mapa = crearMapa(cajaMapa);
+      if (mapa) setTimeout(() => { mapa.invalidateSize(); dibujarEnvio(mapa, e); }, 60);
+    }
+
+    async function cargarMensajeros() {
+      mensajeros = (await api('/api/admin/mensajeros')).mensajeros;
+      if (!vehiculos.length) vehiculos = (await api('/api/admin/tarifas')).vehiculos;
+      $('m-vehiculo').replaceChildren(...vehiculos.map(v => el('option', { value: v.id, text: v.nombre })));
+      const cuerpo = $('tabla-mensajeros');
+      if (!mensajeros.length) cuerpo.replaceChildren(el('tr', {}, el('td', { colspan: 7, style: 'text-align:center;color:var(--suave);padding:2rem', text: 'Todavía no hay mensajeros. Agrega el primero abajo.' })));
+      else cuerpo.replaceChildren(...mensajeros.map(m => {
+        const selV = el('select', { 'aria-label': 'Vehículo' }, vehiculos.map(v => el('option', { value: v.id, text: v.nombre, selected: v.id === m.vehiculo_id })));
+        const activo = el('input', { type: 'checkbox', checked: !!m.activo, style: 'width:auto', 'aria-label': 'Activo' });
+        return el('tr', {},
+          el('td', {}, el('strong', { text: m.nombre })),
+          el('td', {}, telLink(m.telefono), el('br'), sub(m.email)),
+          el('td', {}, selV),
+          el('td', { text: m.activos }),
+          el('td', { text: m.ubic_fecha ? fecha(m.ubic_fecha) : 'Nunca' }),
+          el('td', {}, activo),
+          el('td', {}, el('button', { class: 'boton borde chico', type: 'button', text: 'Guardar', onclick: async () => {
+            try { await api('/api/admin/mensajeros/' + m.id, { method: 'PUT', body: { vehiculo_id: selV.value, activo: activo.checked } }); mostrarMensaje($('msg-mensajeros'), `${m.nombre} actualizado.`, 'exito'); }
+            catch (e) { mostrarMensaje($('msg-mensajeros'), e.message); }
+          } }), ' ',
+          el('button', { class: 'boton borde chico', type: 'button', text: 'Nueva contraseña', onclick: async () => {
+            const p = prompt(`Nueva contraseña para ${m.nombre} (mínimo 8 caracteres):`);
+            if (!p) return;
+            try { await api('/api/admin/mensajeros/' + m.id, { method: 'PUT', body: { password: p } }); mostrarMensaje($('msg-mensajeros'), 'Contraseña cambiada.', 'exito'); }
+            catch (e) { mostrarMensaje($('msg-mensajeros'), e.message); }
+          } })));
+      }));
+      // Mapa de la flota
+      if (!mapaFlota) mapaFlota = crearMapa($('mapa-flota'));
+      if (mapaFlota) {
+        setTimeout(() => mapaFlota.invalidateSize(), 50);
+        if (capaFlota) capaFlota.remove();
+        capaFlota = L.layerGroup().addTo(mapaFlota);
+        const puntos = [];
+        for (const m of mensajeros) {
+          if (!m.ubic_reciente || !m.activo) continue;
+          L.marker([m.ubic_lat, m.ubic_lng], { icon: iconoMensajero() }).addTo(capaFlota).bindPopup(`${m.nombre} (${m.vehiculo || ''})<br>${fecha(m.ubic_fecha)}`);
+          puntos.push([m.ubic_lat, m.ubic_lng]);
+        }
+        if (puntos.length) mapaFlota.fitBounds(puntos, { padding: [50, 50], maxZoom: 14 });
+      }
+    }
+
+    $('form-mensajero').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      try {
+        await api('/api/admin/mensajeros', { body: { nombre: $('m-nombre').value, telefono: $('m-telefono').value, email: $('m-email').value, password: $('m-pass').value, vehiculo_id: $('m-vehiculo').value } });
+        mostrarMensaje($('msg-mensajeros'), `Mensajero agregado. Comparte con él su correo y contraseña.`, 'exito');
+        ev.target.reset(); cargarMensajeros();
+      } catch (e) { mostrarMensaje($('msg-mensajeros'), e.message); }
+    });
+
+    async function cargarClientes() {
+      const { clientes } = await api('/api/admin/clientes');
+      $('tabla-clientes').replaceChildren(...clientes.map(c => el('tr', {},
+        el('td', {}, c.nombre, c.rol === 'admin' ? sub(' (administrador)') : null),
+        el('td', {}, el('a', { href: 'mailto:' + c.email, text: c.email })),
+        el('td', {}, c.telefono ? el('a', { href: 'https://wa.me/502' + c.telefono.replace(/\D/g, '').slice(-8), target: '_blank', rel: 'noopener', text: c.telefono }) : '—'),
+        el('td', { text: c.envios }),
+        el('td', { text: fecha(c.creado, false) }))));
+    }
+
+    async function cargarTarifas() {
+      const t = await api('/api/admin/tarifas');
+      vehiculos = t.vehiculos;
+      const num = (v, paso) => el('input', { type: 'number', min: 0, step: paso, value: v, style: 'min-width:90px' });
+      $('tabla-vehiculos').replaceChildren(...t.vehiculos.map(v => {
+        const f = { nombre: el('input', { value: v.nombre, maxlength: 40, style: 'min-width:90px' }), descripcion: el('input', { value: v.descripcion, maxlength: 120, style: 'min-width:180px' }),
+          peso_max: num(v.peso_max, 1), tarifa_zona: num(v.tarifa_zona.toFixed(2), 0.5), tarifa_base: num(v.tarifa_base.toFixed(2), 0.5), precio_km: num(v.precio_km.toFixed(2), 0.25),
+          activo: el('input', { type: 'checkbox', checked: !!v.activo, style: 'width:auto' }) };
+        return el('tr', {}, ...['nombre', 'descripcion', 'peso_max', 'tarifa_zona', 'tarifa_base', 'precio_km', 'activo'].map(k => el('td', {}, f[k])),
+          el('td', {}, el('button', { class: 'boton borde chico', type: 'button', text: 'Guardar', onclick: async () => {
+            const body = {}; for (const k in f) body[k] = k === 'activo' ? f[k].checked : f[k].value;
+            try { await api('/api/admin/vehiculos/' + v.id, { method: 'PUT', body }); mostrarMensaje($('msg-tarifas'), `${body.nombre} guardado.`, 'exito'); }
+            catch (e) { mostrarMensaje($('msg-tarifas'), e.message); }
+          } })));
+      }));
+      $('tabla-zonas').replaceChildren(...t.zonas.map(z => {
+        const nombre = el('input', { value: z.nombre, maxlength: 60, 'aria-label': 'Nombre de la zona' });
+        const activa = el('input', { type: 'checkbox', checked: !!z.activa, style: 'width:auto', 'aria-label': 'Zona activa' });
+        return el('tr', {}, el('td', {}, nombre), el('td', {}, activa),
+          el('td', {}, el('button', { class: 'boton borde chico', type: 'button', text: 'Guardar', onclick: async () => {
+            try { await api('/api/admin/zonas/' + z.id, { method: 'PUT', body: { nombre: nombre.value, activa: activa.checked } }); mostrarMensaje($('msg-tarifas'), `${nombre.value} guardada.`, 'exito'); }
+            catch (e) { mostrarMensaje($('msg-tarifas'), e.message); }
+          } })));
+      }));
+      $('whatsapp').value = t.ajustes.whatsapp || ''; $('horario').value = t.ajustes.horario || '';
+    }
+
+    $('form-zona').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      try { await api('/api/admin/zonas', { body: { nombre: $('zona-nombre').value } }); ev.target.reset(); mostrarMensaje($('msg-tarifas'), 'Zona agregada.', 'exito'); cargarTarifas(); }
+      catch (e) { mostrarMensaje($('msg-tarifas'), e.message); }
+    });
+    $('form-ajustes').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      try { await api('/api/admin/ajustes', { method: 'PUT', body: { whatsapp: $('whatsapp').value, horario: $('horario').value } }); mostrarMensaje($('msg-tarifas'), 'Contacto guardado.', 'exito'); }
+      catch (e) { mostrarMensaje($('msg-tarifas'), e.message); }
+    });
+
+    $('buscar').addEventListener('input', () => { clearTimeout(temporizador); temporizador = setTimeout(cargarEnvios, 300); });
+    $('refrescar').addEventListener('click', () => { cargarResumen(); cargarEnvios(); });
+
+    (async () => {
+      const usuario = await pintarBarra();
+      if (!usuario) { location.href = '/entrar'; return; }
+      if (usuario.rol !== 'admin') { location.href = usuario.rol === 'mensajero' ? '/mensajero' : '/mi-cuenta'; return; }
+      pintarChips(); cargarResumen(); cargarEnvios();
+      setInterval(() => { if (!$('dlg').open) { cargarResumen(); cargarEnvios(); } }, 60000);
+    })();
+  </script>
+</body>
+</html>

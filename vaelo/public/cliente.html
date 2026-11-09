@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis envíos · Vaelo</title>
+  <meta name="theme-color" content="#0e2463">
+  <link rel="icon" href="/img/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header id="barra" class="barra"><div class="contenedor"><a href="/" class="marca"><img src="/img/logo-blanco.png" alt="Vaelo" width="139" height="40"></a></div></header>
+  <main class="area">
+    <div class="contenedor">
+      <div class="area-cabecera">
+        <div><h1 id="saludo">Mis envíos</h1><p>Envía un paquete o sigue los que ya pediste.</p></div>
+      </div>
+
+      <div class="pestanas" role="tablist">
+        <button role="tab" id="tab-nuevo" aria-selected="true" aria-controls="panel-nuevo">Enviar paquete</button>
+        <button role="tab" id="tab-lista" aria-selected="false" aria-controls="panel-lista">Mis envíos <span id="conteo"></span></button>
+        <button role="tab" id="tab-cuenta" aria-selected="false" aria-controls="panel-cuenta">Mis datos</button>
+      </div>
+
+      <section id="panel-nuevo" role="tabpanel" aria-labelledby="tab-nuevo">
+        <form id="form-envio" class="bloque" novalidate>
+          <div id="msg-envio" class="mensaje" role="alert"></div>
+
+          <fieldset>
+            <legend>¿En qué lo enviamos?</legend>
+            <div class="vehiculos" id="vehiculos" role="radiogroup" aria-label="Vehículo"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>El paquete</legend>
+            <div class="fila">
+              <div class="campo"><label for="peso">Peso aproximado (libras)</label><input id="peso" type="number" min="0.1" step="0.1" inputmode="decimal" placeholder="Ej. 5" required></div>
+              <div class="campo"><label for="descripcion">¿Qué contiene? <span class="ayuda">Opcional</span></label><input id="descripcion" maxlength="200" placeholder="Documentos, ropa, repuestos…"></div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>¿Dónde lo recogemos?</legend>
+            <div class="fila">
+              <div class="campo"><label for="origen_zona">Zona o municipio</label><select id="origen_zona" required></select></div>
+              <div class="campo"><label for="origen_telefono">Teléfono de contacto</label><input id="origen_telefono" type="tel" maxlength="30" placeholder="5555-5555"></div>
+            </div>
+            <div class="campo"><label for="origen_direccion">Dirección exacta <span class="ayuda">Calle, avenida, número, zona y una referencia</span></label><textarea id="origen_direccion" required maxlength="300" placeholder="6a. Avenida 10-20, zona 1, frente al parque"></textarea></div>
+            <div class="campo"><span class="etiqueta-campo">Marca el punto de recogida en el mapa</span><div id="mapa-origen"></div></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>¿A dónde lo llevamos?</legend>
+            <div class="fila">
+              <div class="campo"><label for="destino_nombre">Nombre de quien recibe</label><input id="destino_nombre" required maxlength="100"></div>
+              <div class="campo"><label for="destino_telefono">Teléfono de quien recibe</label><input id="destino_telefono" type="tel" required maxlength="30" placeholder="5555-5555"></div>
+            </div>
+            <div class="fila">
+              <div class="campo"><label for="destino_zona">Zona o municipio</label><select id="destino_zona" required></select></div>
+            </div>
+            <div class="campo"><label for="destino_direccion">Dirección de entrega <span class="ayuda">Calle, avenida, número, zona y una referencia</span></label><textarea id="destino_direccion" required maxlength="300"></textarea></div>
+            <div class="campo"><span class="etiqueta-campo">Marca el punto de entrega en el mapa</span><div id="mapa-destino"></div></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Pago y detalles</legend>
+            <div class="campo">
+              <div class="opciones" role="radiogroup" aria-label="Cómo pagas el envío">
+                <label class="opcion"><input type="radio" name="metodo_pago" value="efectivo" checked><span>Efectivo<small>Al mensajero</small></span></label>
+                <label class="opcion"><input type="radio" name="metodo_pago" value="transferencia"><span>Transferencia<small>Te enviamos los datos</small></span></label>
+              </div>
+            </div>
+            <div class="fila">
+              <div class="campo"><label for="cobro_destinatario">Cobrar a quien recibe (Q) <span class="ayuda">Si vendes en línea; deja vacío si no aplica</span></label><input id="cobro_destinatario" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+              <div class="campo"><label for="notas">Indicaciones para el mensajero <span class="ayuda">Opcional</span></label><input id="notas" maxlength="300" placeholder="Llamar al llegar, dejar en garita…"></div>
+            </div>
+          </fieldset>
+
+          <div class="resumen-precio"><span>Precio del envío<span class="desglose" id="desglose"></span></span><strong id="precio" aria-live="polite">—</strong></div>
+          <button class="boton" type="submit">Enviar paquete</button>
+        </form>
+      </section>
+
+      <section id="panel-lista" role="tabpanel" aria-labelledby="tab-lista" hidden>
+        <div id="lista" class="lista-envios"></div>
+      </section>
+
+      <section id="panel-cuenta" role="tabpanel" aria-labelledby="tab-cuenta" hidden>
+        <form class="bloque" id="form-datos" novalidate>
+          <h2>Tus datos</h2>
+          <div id="msg-datos" class="mensaje" role="alert"></div>
+          <div class="fila">
+            <div class="campo"><label for="mi-nombre">Nombre completo</label><input id="mi-nombre" maxlength="100"></div>
+            <div class="campo"><label for="mi-telefono">Teléfono</label><input id="mi-telefono" type="tel" maxlength="30"></div>
+            <div class="campo"><label for="mi-email">Correo</label><input id="mi-email" disabled></div>
+          </div>
+          <button class="boton" type="submit">Guardar datos</button>
+        </form>
+        <form class="bloque" id="form-pass" novalidate>
+          <h2>Cambiar contraseña</h2>
+          <div id="msg-pass" class="mensaje" role="alert"></div>
+          <div class="fila">
+            <div class="campo"><label for="actual">Contraseña actual</label><input id="actual" type="password" autocomplete="current-password"></div>
+            <div class="campo"><label for="nueva">Nueva contraseña <span class="ayuda">Mínimo 8 caracteres</span></label><input id="nueva" type="password" autocomplete="new-password"></div>
+          </div>
+          <button class="boton" type="submit">Guardar contraseña</button>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="dlg"><div class="dialogo" id="dlg-cuerpo"></div></dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/js/comun.js"></script>
+  <script>
+    let cfg = null, envios = [], selOrigen = null, selDestino = null, refresco = null;
+    const $ = (id) => document.getElementById(id);
+    const ICONOS = { moto: '🏍️', pickup: '🛻' };
+    const icono = (nombre) => ICONOS[(nombre || '').toLowerCase()] || '📦';
+
+    // Pestañas
+    const tabs = ['nuevo', 'lista', 'cuenta'];
+    function abrirTab(nombre) {
+      tabs.forEach(t => { $('tab-' + t).setAttribute('aria-selected', String(t === nombre)); $('panel-' + t).hidden = t !== nombre; });
+      if (nombre === 'lista') cargarEnvios();
+      if (nombre === 'nuevo') setTimeout(() => { selOrigen && selOrigen.refrescar(); selDestino && selDestino.refrescar(); }, 50);
+    }
+    tabs.forEach(t => $('tab-' + t).addEventListener('click', () => abrirTab(t)));
+
+    // Precio en vivo
+    function datosCotizacion() {
+      const o = selOrigen && selOrigen.obtener(), d = selDestino && selDestino.obtener();
+      return {
+        vehiculo_id: document.querySelector('input[name="vehiculo_id"]:checked')?.value,
+        peso: $('peso').value, origen_zona: $('origen_zona').value, destino_zona: $('destino_zona').value,
+        origen_lat: o?.lat, origen_lng: o?.lng, destino_lat: d?.lat, destino_lng: d?.lng,
+      };
+    }
+    let temporizador = null, turno = 0;
+    function actualizarPrecio() {
+      clearTimeout(temporizador);
+      temporizador = setTimeout(async () => {
+        const mio = ++turno;
+        const datos = datosCotizacion();
+        if (!datos.peso) { $('precio').textContent = '—'; $('desglose').textContent = 'Escribe el peso del paquete'; return; }
+        try {
+          const r = await api('/api/cotizar', { body: datos });
+          if (mio !== turno) return;
+          $('precio').textContent = dinero(r.precio);
+          $('desglose').textContent = r.detalle;
+        } catch (e) {
+          if (mio !== turno) return;
+          $('precio').textContent = '—'; $('desglose').textContent = e.message;
+        }
+      }, 350);
+    }
+
+    function tarjetaEnvio(e) {
+      const acciones = el('div', { class: 'acciones' },
+        el('button', { class: 'boton chico', type: 'button', text: 'Ver en el mapa', onclick: () => verDetalle(e.id) }),
+        el('button', { class: 'boton borde chico', type: 'button', text: 'Guía', onclick: () => verGuia(e) }));
+      if (e.estado === 'pendiente') {
+        acciones.append(el('button', { class: 'boton peligro chico', type: 'button', text: 'Cancelar envío', onclick: async (ev) => {
+          if (!confirm(`¿Cancelar el envío ${e.guia}?`)) return;
+          ev.target.disabled = true;
+          try { await api(`/api/envios/${e.id}/cancelar`, { body: {} }); cargarEnvios(); }
+          catch (err) { alert(err.message); ev.target.disabled = false; }
+        } }));
+      }
+      return el('article', { class: 'envio' },
+        el('div', {},
+          el('div', { class: 'guia', text: e.guia }),
+          el('div', { class: 'detalle', text: `${icono(e.vehiculo)} ${e.vehiculo}, ${e.peso} lb. Para ${e.destino_nombre}, ${e.destino_zona}` }),
+          el('div', { class: 'detalle', text: fecha(e.creado) + (e.mensajero_nombre ? `. Mensajero: ${e.mensajero_nombre.split(' ')[0]}` : '') })),
+        el('div', { class: 'lado' }, chipEstado(e.estado), el('strong', { text: dinero(e.precio) })),
+        acciones);
+    }
+
+    async function cargarEnvios() {
+      const lista = $('lista');
+      try {
+        envios = (await api('/api/envios')).envios;
+        $('conteo').textContent = envios.length ? `(${envios.length})` : '';
+        if (!envios.length) {
+          lista.replaceChildren(el('div', { class: 'vacio' }, el('p', { text: 'Todavía no has enviado paquetes.' }),
+            el('button', { class: 'boton', type: 'button', text: 'Enviar mi primer paquete', onclick: () => abrirTab('nuevo') })));
+        } else lista.replaceChildren(...envios.map(tarjetaEnvio));
+      } catch (e) { lista.replaceChildren(el('div', { class: 'mensaje error', text: e.message })); }
+    }
+
+    function cerrarDialogo() { $('dlg').close(); }
+    $('dlg').addEventListener('close', () => { clearInterval(refresco); refresco = null; });
+
+    function verGuia(e) {
+      $('dlg-cuerpo').replaceChildren(
+        el('button', { class: 'cerrar no-imprimir', type: 'button', 'aria-label': 'Cerrar', text: '×', onclick: cerrarDialogo }),
+        el('h2', { class: 'no-imprimir', style: 'font-size:1.3rem', text: 'Guía de envío' }),
+        el('p', { class: 'no-imprimir', style: 'color:var(--suave)', text: 'Imprímela y pégala en el paquete, o anota el número de guía en la caja.' }),
+        guiaImprimible(e),
+        el('div', { class: 'no-imprimir', style: 'margin-top:1rem;display:flex;gap:.5rem' },
+          el('button', { class: 'boton', type: 'button', text: 'Imprimir guía', onclick: () => window.print() }),
+          el('button', { class: 'boton borde', type: 'button', text: 'Cerrar', onclick: cerrarDialogo })));
+      if (!$('dlg').open) $('dlg').showModal();
+    }
+
+    const PASOS = ['pendiente', 'recogido', 'en_camino', 'entregado'];
+    async function verDetalle(id) {
+      let datos;
+      try { datos = await api('/api/envios/' + id); } catch (err) { alert(err.message); return; }
+      const { envio: e, eventos } = datos;
+      const idx = PASOS.indexOf(e.estado);
+      const cajaMapa = el('div', { class: 'mapa alto' });
+      $('dlg-cuerpo').replaceChildren(
+        el('button', { class: 'cerrar', type: 'button', 'aria-label': 'Cerrar', text: '×', onclick: cerrarDialogo }),
+        el('h2', { style: 'font-size:1.4rem;margin-bottom:.3rem', text: e.guia }), chipEstado(e.estado),
+        e.estado !== 'cancelado' ? el('div', { style: 'margin-top:1rem' },
+          el('div', { class: 'progreso', 'aria-hidden': 'true' }, PASOS.map((_, i) => el('i', { class: i <= idx ? 'lleno' : '' }))),
+          el('div', { class: 'progreso-textos' }, ['Solicitado', 'Recogido', 'En camino', 'Entregado'].map((t, i) => el('span', { class: i === idx ? 'actual' : '', text: t })))) : null,
+        cajaMapa,
+        el('div', { class: 'leyenda' },
+          el('span', {}, el('i', { style: 'background:#0e2463' }), 'A: recogida'),
+          el('span', {}, el('i', { style: `background:${e.estado === 'entregado' ? '#17824a' : '#d9480f'}` }), 'B: entrega'),
+          e.mensajero_lat ? el('span', { text: `🛵 Mensajero (actualizado ${fecha(e.mensajero_ubic_fecha)})` }) : null),
+        el('div', { class: 'datos' },
+          el('div', {}, el('span', { text: 'Mensajero' }), e.mensajero_nombre ? [e.mensajero_nombre, el('br'), telLink(e.mensajero_telefono)] : 'Por asignar'),
+          el('div', {}, el('span', { text: 'Vehículo y peso' }), `${e.vehiculo}, ${e.peso} lb`),
+          el('div', {}, el('span', { text: 'Recogida' }), `${e.origen_direccion} (${e.origen_zona})`),
+          el('div', {}, el('span', { text: 'Entrega' }), `${e.destino_nombre}. ${e.destino_direccion} (${e.destino_zona})`),
+          el('div', {}, el('span', { text: 'Precio' }), `${dinero(e.precio)}${e.km ? `, ${e.km} km` : ''}`),
+          Number(e.cobro_destinatario) > 0 ? el('div', {}, el('span', { text: 'Cobrar al recibir' }), dinero(e.cobro_destinatario)) : null),
+        el('h3', { text: 'Historial' }),
+        el('ol', { class: 'linea-tiempo' }, eventos.slice().reverse().map(ev =>
+          el('li', {}, el('strong', { text: ESTADOS[ev.estado] || ev.estado }), ev.nota ? el('div', { text: ev.nota }) : null, el('small', { text: fecha(ev.creado) })))),
+        el('div', { style: 'margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap' },
+          el('button', { class: 'boton borde', type: 'button', text: 'Ver guía', onclick: () => verGuia(e) }),
+          el('button', { class: 'boton borde', type: 'button', text: 'Cerrar', onclick: cerrarDialogo })));
+      if (!$('dlg').open) $('dlg').showModal();
+      const mapa = crearMapa(cajaMapa);
+      if (mapa) { setTimeout(() => { mapa.invalidateSize(); dibujarEnvio(mapa, e); }, 60); }
+      // Se actualiza solo cada 30 segundos mientras el envío está activo
+      clearInterval(refresco);
+      if (['pendiente', 'recogido', 'en_camino'].includes(e.estado)) refresco = setInterval(() => verDetalle(id), 30000);
+    }
+
+    $('form-envio').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const f = ev.target;
+      const boton = f.querySelector('button[type="submit"]');
+      boton.disabled = true;
+      try {
+        const r = await api('/api/envios', { body: {
+          ...datosCotizacion(),
+          descripcion: f.descripcion.value, origen_telefono: f.origen_telefono.value, origen_direccion: f.origen_direccion.value,
+          destino_nombre: f.destino_nombre.value, destino_telefono: f.destino_telefono.value, destino_direccion: f.destino_direccion.value,
+          cobro_destinatario: f.cobro_destinatario.value, metodo_pago: f.metodo_pago.value, notas: f.notas.value,
+        } });
+        ['peso', 'descripcion', 'destino_nombre', 'destino_telefono', 'destino_direccion', 'cobro_destinatario', 'notas'].forEach(k => { f[k].value = ''; });
+        selDestino && selDestino.limpiar();
+        mostrarMensaje($('msg-envio'), '');
+        $('precio').textContent = '—'; $('desglose').textContent = '';
+        abrirTab('lista');
+        verDetalle(r.id);
+      } catch (e) { mostrarMensaje($('msg-envio'), e.message); }
+      boton.disabled = false;
+    });
+
+    $('form-datos').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      try { await api('/api/yo', { method: 'PUT', body: { nombre: $('mi-nombre').value, telefono: $('mi-telefono').value } }); mostrarMensaje($('msg-datos'), 'Datos guardados.', 'exito'); }
+      catch (e) { mostrarMensaje($('msg-datos'), e.message); }
+    });
+    $('form-pass').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const f = ev.target;
+      try { await api('/api/cambiar-password', { body: { actual: f.actual.value, nueva: f.nueva.value } }); f.reset(); mostrarMensaje($('msg-pass'), 'Contraseña actualizada.', 'exito'); }
+      catch (e) { mostrarMensaje($('msg-pass'), e.message); }
+    });
+
+    (async () => {
+      const usuario = await pintarBarra();
+      if (!usuario) { location.href = '/entrar?volver=' + encodeURIComponent(location.pathname); return; }
+      $('saludo').textContent = `Hola, ${usuario.nombre.split(' ')[0]}`;
+      $('origen_telefono').value = usuario.telefono || '';
+      $('mi-nombre').value = usuario.nombre; $('mi-telefono').value = usuario.telefono || ''; $('mi-email').value = usuario.email;
+
+      cfg = await api('/api/config');
+      $('vehiculos').replaceChildren(...cfg.vehiculos.map((v, i) => el('label', { class: 'vehiculo' },
+        el('input', { type: 'radio', name: 'vehiculo_id', value: v.id, checked: i === 0 }),
+        el('span', { class: 'tarjeta' },
+          el('span', { class: 'icono', 'aria-hidden': 'true', text: icono(v.nombre) }),
+          el('strong', { text: v.nombre }),
+          el('small', { text: `${v.descripcion}. Hasta ${v.peso_max} lb` }),
+          el('span', { class: 'precio-v', text: `${dinero(v.tarifa_zona)} en zonas cubiertas` })))));
+      const opciones = () => [...cfg.zonas.map(z => el('option', { value: z, text: z })), el('option', { value: cfg.otraZona, text: cfg.otraZona })];
+      $('origen_zona').replaceChildren(...opciones()); $('destino_zona').replaceChildren(...opciones());
+
+      selOrigen = selectorPunto($('mapa-origen'), { letra: 'A', clase: 'recogida', conMiUbicacion: true, alCambiar: actualizarPrecio });
+      selDestino = selectorPunto($('mapa-destino'), { letra: 'B', clase: 'entrega', alCambiar: actualizarPrecio });
+      ['peso', 'origen_zona', 'destino_zona'].forEach(id => $(id).addEventListener('input', actualizarPrecio));
+      $('vehiculos').addEventListener('change', actualizarPrecio);
+      actualizarPrecio();
+
+      if (location.pathname === '/mi-cuenta') abrirTab('lista'); else cargarEnvios();
+    })();
+  </script>
+</body>
+</html>

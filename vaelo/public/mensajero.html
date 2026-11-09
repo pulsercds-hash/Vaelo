@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis entregas · Vaelo</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0e2463">
+  <link rel="icon" href="/img/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header id="barra" class="barra"><div class="contenedor"><a href="/" class="marca"><img src="/img/logo-blanco.png" alt="Vaelo" width="139" height="40"></a></div></header>
+  <main class="area">
+    <div class="contenedor" style="max-width:720px">
+      <div class="area-cabecera">
+        <div><h1 id="saludo">Mis entregas</h1><p>Los envíos que te asignaron, en orden.</p></div>
+        <button class="boton borde chico" type="button" id="refrescar">Actualizar</button>
+      </div>
+
+      <label class="interruptor">
+        <span><strong>Compartir mi ubicación</strong><br><small style="color:var(--suave)">Los clientes ven dónde va su paquete. Mantén esta página abierta mientras trabajas.</small></span>
+        <input type="checkbox" id="compartir">
+      </label>
+      <div id="msg" class="mensaje" role="alert"></div>
+      <div id="lista" class="lista-envios"></div>
+    </div>
+  </main>
+
+  <script src="/js/comun.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const SIGUIENTE = {
+      pendiente: { estado: 'recogido', texto: 'Ya recogí el paquete' },
+      recogido: { estado: 'en_camino', texto: 'Voy en camino a entregar' },
+      en_camino: { estado: 'entregado', texto: 'Paquete entregado' },
+    };
+    let ultimaPos = null, vigilante = null, ultimoEnvio = 0;
+
+    const linksNavegar = (lat, lng, direccion) => {
+      const destino = lat ? `${lat},${lng}` : encodeURIComponent(direccion + ', Guatemala');
+      return el('div', { class: 'navegar' },
+        el('a', { class: 'boton borde chico', target: '_blank', rel: 'noopener', href: `https://www.google.com/maps/dir/?api=1&destination=${destino}`, text: 'Google Maps' }),
+        el('a', { class: 'boton borde chico', target: '_blank', rel: 'noopener', href: lat ? `https://waze.com/ul?ll=${lat},${lng}&navigate=yes` : `https://waze.com/ul?q=${destino}&navigate=yes`, text: 'Waze' }));
+    };
+
+    function posicionActual() {
+      return new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve(ultimaPos);
+        navigator.geolocation.getCurrentPosition(
+          (p) => { ultimaPos = { lat: p.coords.latitude, lng: p.coords.longitude }; resolve(ultimaPos); },
+          () => resolve(ultimaPos), { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+      });
+    }
+
+    function tarjeta(e, primera) {
+      const sig = SIGUIENTE[e.estado];
+      const nota = el('input', { maxlength: 300, placeholder: e.estado === 'en_camino' ? '¿Quién recibió? Ej. Ana, la destinataria' : 'Nota opcional' });
+      const boton = sig && el('button', { class: 'boton accion-principal' + (sig.estado === 'entregado' ? ' cinta' : ''), type: 'button', text: sig.texto, onclick: async () => {
+        if (sig.estado === 'entregado' && !confirm(`¿Confirmas que entregaste ${e.guia}?`)) return;
+        boton.disabled = true; boton.textContent = 'Guardando…';
+        const pos = await posicionActual();
+        try {
+          await api(`/api/mensajero/envios/${e.id}/estado`, { body: { estado: sig.estado, nota: nota.value, lat: pos?.lat, lng: pos?.lng } });
+          cargar();
+        } catch (err) { mostrarMensaje($('msg'), err.message); boton.disabled = false; boton.textContent = sig.texto; }
+      } });
+      const recoger = e.estado === 'pendiente';
+      return el('article', { class: 'entrega-tarjeta' + (primera && sig ? ' activa' : '') },
+        el('div', { class: 'cab' }, el('strong', { class: 'guia', text: e.guia }), chipEstado(e.estado)),
+        el('div', { class: 'parada' + (recoger ? '' : ' b'), style: recoger ? '' : 'opacity:.55' },
+          el('span', { text: 'A. Recoger en' }),
+          `${e.origen_direccion} (${e.origen_zona})`, el('br'),
+          'Cliente: ', e.cliente_nombre, ' · ', telLink(e.origen_telefono),
+          recoger ? linksNavegar(e.origen_lat, e.origen_lng, e.origen_direccion) : null),
+        el('div', { class: 'parada b' },
+          el('span', { text: 'B. Entregar a' }),
+          el('strong', { text: e.destino_nombre }), ' · ', telLink(e.destino_telefono), el('br'),
+          `${e.destino_direccion} (${e.destino_zona})`,
+          !recoger && e.estado !== 'entregado' ? linksNavegar(e.destino_lat, e.destino_lng, e.destino_direccion) : null),
+        el('div', { style: 'font-size:.92rem;color:var(--suave)' },
+          `${e.vehiculo}, ${e.peso} lb${e.descripcion ? '. ' + e.descripcion : ''}. Envío ${dinero(e.precio)} (${PAGOS[e.metodo_pago] || e.metodo_pago})`,
+          e.notas ? el('div', { style: 'color:var(--tinta)', text: 'Indicaciones: ' + e.notas }) : null),
+        Number(e.cobro_destinatario) > 0 ? el('div', { class: 'cobro', text: `Cobrar a quien recibe: ${dinero(e.cobro_destinatario)}` }) : null,
+        sig ? nota : null,
+        boton || el('p', { class: 'pista ok', text: 'Entregado ' + fecha(e.actualizado) }));
+    }
+
+    async function cargar() {
+      try {
+        const { envios } = await api('/api/mensajero/envios');
+        const activos = envios.filter(e => e.estado !== 'entregado').length;
+        if (!envios.length) $('lista').replaceChildren(el('div', { class: 'vacio', text: 'No tienes entregas asignadas por ahora.' }));
+        else $('lista').replaceChildren(...envios.map((e, i) => tarjeta(e, i === 0)));
+        document.title = activos ? `(${activos}) Mis entregas · Vaelo` : 'Mis entregas · Vaelo';
+      } catch (e) { mostrarMensaje($('msg'), e.message); }
+    }
+
+    // Compartir ubicación mientras la página está abierta (máximo un envío cada 30 segundos)
+    function compartir(activar) {
+      if (vigilante != null) { navigator.geolocation.clearWatch(vigilante); vigilante = null; }
+      try { localStorage.setItem('vaelo_compartir', activar ? '1' : '0'); } catch {}
+      if (!activar) return;
+      if (!navigator.geolocation) { mostrarMensaje($('msg'), 'Este teléfono no permite compartir la ubicación.'); $('compartir').checked = false; return; }
+      vigilante = navigator.geolocation.watchPosition(async (p) => {
+        ultimaPos = { lat: p.coords.latitude, lng: p.coords.longitude };
+        if (Date.now() - ultimoEnvio < 30000) return;
+        ultimoEnvio = Date.now();
+        try { await api('/api/mensajero/ubicacion', { body: ultimaPos }); } catch { /* se reintenta en la siguiente lectura */ }
+      }, () => {
+        mostrarMensaje($('msg'), 'No pudimos leer tu ubicación. Revisa que el permiso de ubicación esté activado para esta página.');
+        $('compartir').checked = false;
+      }, { enableHighAccuracy: true, maximumAge: 20000 });
+    }
+    $('compartir').addEventListener('change', (ev) => compartir(ev.target.checked));
+    $('refrescar').addEventListener('click', cargar);
+
+    (async () => {
+      const usuario = await pintarBarra();
+      if (!usuario) { location.href = '/entrar?volver=/mensajero'; return; }
+      if (!['mensajero', 'admin'].includes(usuario.rol)) { location.href = '/mi-cuenta'; return; }
+      $('saludo').textContent = `Hola, ${usuario.nombre.split(' ')[0]}`;
+      let guardado = '1';
+      try { guardado = localStorage.getItem('vaelo_compartir') ?? '1'; } catch {}
+      if (guardado === '1') { $('compartir').checked = true; compartir(true); }
+      cargar();
+      setInterval(cargar, 60000);
+    })();
+  </script>
+</body>
+</html>
